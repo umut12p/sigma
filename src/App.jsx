@@ -85,13 +85,22 @@ const MovieApp = () => {
               <img src={movieDetails.Poster} alt={movieDetails.Title} className="detail-poster" />
               <div className="detail-info">
                 <h1>{movieDetails.Title}</h1>
-                <p>{movieDetails.Year} • {movieDetails.Runtime}</p>
-                <p>⭐ {movieDetails.imdbRating}</p>
-                <p>{movieDetails.Plot}</p>
-                <div className="detail-meta">
-                  <p><strong>Genre:</strong> {movieDetails.Genre}</p>
-                  <p><strong>Director:</strong> {movieDetails.Director}</p>
-                  <p><strong>Actors:</strong> {movieDetails.Actors}</p>
+                <p className="meta">{movieDetails.Year} • {movieDetails.Runtime}</p>
+                <p className="rating">⭐ {movieDetails.imdbRating}</p>
+                <p className="plot">{movieDetails.Plot}</p>
+                <div className="details-grid">
+                  <div className="detail-item">
+                    <span className="label">Genre:</span>
+                    <span className="value">{movieDetails.Genre}</span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="label">Director:</span>
+                    <span className="value">{movieDetails.Director}</span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="label">Actors:</span>
+                    <span className="value">{movieDetails.Actors}</span>
+                  </div>
                 </div>
               </div>
             </div>
