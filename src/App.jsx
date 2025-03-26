@@ -1,156 +1,168 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import './Index.css';
 
-const App = () => {
-  const [users] = useState([
-    { id: 1, firstName: 'Sylvia', lastName: 'Ernser', role: 'Investor Usability Planner', image: 'https://www.w3schools.com/howto/img_avatar.png' },
-    { id: 2, firstName: 'Hazel', lastName: 'Gleicher', role: 'Global Identity Specialist', image: 'https://www.w3schools.com/howto/img_avatar.png' },
-    { id: 3, firstName: 'Leon', lastName: 'Lueilwitz MD', role: 'Legacy Paradigm Administrator', image: 'https://www.w3schools.com/howto/img_avatar.png' },
-    { id: 4, firstName: 'Annie', lastName: 'Leannon', role: 'Human Web Associate', image: 'https://www.w3schools.com/howto/img_avatar.png' },
-    { id: 5, firstName: 'Valerie', lastName: 'Boehm', role: 'Investor Integration Supervisor', image: 'https://www.w3schools.com/howto/img_avatar.png' },
-    { id: 6, firstName: 'Kari', lastName: 'Beatty', role: 'Product Solutions Facilitator', image: 'https://www.w3schools.com/howto/img_avatar.png' },
-    { id: 7, firstName: 'Katherine', lastName: 'Labadie PhD', role: 'Dynamic Program Director', image: 'https://www.w3schools.com/howto/img_avatar.png' },
-    { id: 8, firstName: 'Antonia', lastName: 'Grimes', role: 'Human Integration Planner', image: 'https://www.w3schools.com/howto/img_avatar.png' },
-  ]);
+const MovieApp = () => {
+  const [movies, setMovies] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalResults, setTotalResults] = useState(0);
+  const [searchType, setSearchType] = useState('genre');
+  const [selectedMovie, setSelectedMovie] = useState(null);
+  const [movieDetails, setMovieDetails] = useState(null);
+  const [showMoreGenres, setShowMoreGenres] = useState(false);
 
-  const [search, setSearch] = useState('');
+  const API_KEY = 'b759026d';
+  const RESULTS_PER_PAGE = 8;
+  const baseGenres = ['action', 'comedy', 'drama', 'horror'];
+  const extraGenres = ['romance', 'thriller', 'sci-fi', 'adventure'];
 
-  const filteredUsers = users.filter(user => {
-    const fullName = `${user.firstName} ${user.lastName}`.toLowerCase();
-    return fullName.includes(search.toLowerCase());
-  });
+  useEffect(() => {
+    if (searchType === 'genre') fetchMovies('action', 1);
+  }, []);
+
+  const fetchMovies = async (query, page, isNewSearch = false) => {
+    try {
+      setIsLoading(true);
+      const url = `https://www.omdbapi.com/?apikey=${API_KEY}&s=${query}&type=movie&page=${page}`;
+      const response = await fetch(url);
+      const data = await response.json();
+      
+      if (data.Search) {
+        setTotalResults(data.totalResults);
+        setMovies(prev => isNewSearch ? data.Search : [...prev, ...data.Search]);
+        setCurrentPage(page);
+      } else setError(data.Error || 'No movies found');
+    } catch (err) {
+      setError('Error fetching movies');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchMovieDetails = async (id) => {
+    try {
+      setIsLoading(true);
+      const response = await fetch(`https://www.omdbapi.com/?apikey=${API_KEY}&i=${id}`);
+      const data = await response.json();
+      setMovieDetails(data);
+      setSelectedMovie(id);
+    } catch (err) {
+      setError('Failed to load details');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGenreClick = (genre) => {
+    setSearchTerm('');
+    setSearchType('genre');
+    setMovies([]);
+    fetchMovies(genre, 1, true);
+  };
+
+  const handleHomeClick = () => {
+    setSearchTerm('');
+    setSelectedMovie(null);
+    fetchMovies('action', 1, true);
+  };
+
+  const loadMore = () => {
+    const nextPage = currentPage + 1;
+    searchType === 'genre' ? fetchMovies('action', nextPage) : fetchMovies(searchTerm, nextPage);
+  };
 
   return (
-    <div style={styles.appContainer}>
-      <div style={styles.header}>
-        <div style={styles.star}>★</div>
-        <input
-          type="text"
-          placeholder="Search names..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          style={styles.searchInput}
-        />
-      </div>
+    <div className="app-container">
+      <div className="star-icon" onClick={handleHomeClick}>★</div>
 
-      <div style={styles.cardGrid}>
-        {filteredUsers.length === 0 ? (
-          <div style={styles.noResults}>No matching users found</div>
-        ) : (
-          filteredUsers.map((user) => (
-            <div key={user.id} style={styles.card}>
-              <img
-                src={user.image}
-                alt={`${user.firstName} ${user.lastName}`}
-                style={styles.avatar}
-              />
-              <h3 style={styles.name}>
-                <span style={styles.firstName}>{user.firstName}</span>
-                <span style={styles.lastName}>{user.lastName}</span>
-              </h3>
-              <p style={styles.role}>{user.role}</p>
+      {selectedMovie ? (
+        <div className="movie-details">
+          <button className="back-btn" onClick={() => setSelectedMovie(null)}>← Back</button>
+          {movieDetails && (
+            <div className="detail-content">
+              <img src={movieDetails.Poster} alt={movieDetails.Title} className="detail-poster" />
+              <div className="detail-info">
+                <h1>{movieDetails.Title}</h1>
+                <p>{movieDetails.Year} • {movieDetails.Runtime}</p>
+                <p>⭐ {movieDetails.imdbRating}</p>
+                <p>{movieDetails.Plot}</p>
+                <div className="detail-meta">
+                  <p><strong>Genre:</strong> {movieDetails.Genre}</p>
+                  <p><strong>Director:</strong> {movieDetails.Director}</p>
+                  <p><strong>Actors:</strong> {movieDetails.Actors}</p>
+                </div>
+              </div>
             </div>
-          ))
-        )}
-      </div>
+          )}
+        </div>
+      ) : (
+        <>
+          <nav className="nav-container">
+            <div className="genre-wrapper">
+              <div className={`genre-buttons ${showMoreGenres ? 'expanded' : ''}`}>
+                {baseGenres.map(genre => (
+                  <button key={genre} className="genre-btn" onClick={() => handleGenreClick(genre)}>
+                    {genre.charAt(0).toUpperCase() + genre.slice(1)}
+                  </button>
+                ))}
+                {showMoreGenres && extraGenres.map(genre => (
+                  <button key={genre} className="genre-btn" onClick={() => handleGenreClick(genre)}>
+                    {genre.charAt(0).toUpperCase() + genre.slice(1)}
+                  </button>
+                ))}
+              </div>
+              <button 
+                className="genre-arrow"
+                onClick={() => setShowMoreGenres(!showMoreGenres)}
+              >
+                {showMoreGenres ? '◀' : '▶'}
+              </button>
+            </div>
+          </nav>
+
+          <div className="search-container">
+            <input
+              type="text"
+              placeholder="Search movies..."
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                if (e.target.value.length > 2) {
+                  setSearchType('search');
+                  fetchMovies(e.target.value, 1, true);
+                }
+              }}
+              className="search-input"
+            />
+          </div>
+
+          <div className="movie-grid">
+            {movies.slice(0, currentPage * RESULTS_PER_PAGE).map(movie => (
+              <div key={movie.imdbID} className="movie-card" onClick={() => fetchMovieDetails(movie.imdbID)}>
+                <img src={movie.Poster} alt={movie.Title} className="movie-poster" />
+                <div className="movie-info">
+                  <h3 className="movie-title">{movie.Title}</h3>
+                  <p className="movie-year">{movie.Year}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {movies.length < totalResults && (
+            <div className="load-more-container">
+              <button onClick={loadMore} className="load-more-btn" disabled={isLoading}>
+                {isLoading ? 'Loading...' : 'Load More'}
+              </button>
+            </div>
+          )}
+        </>
+      )}
+
+      {error && <div className="error">{error}</div>}
     </div>
   );
 };
 
-const styles = {
-  appContainer: {
-    minHeight: '100vh',
-    backgroundColor: '#2d2d2d',
-    padding: '2rem',
-    fontFamily: "'Segoe UI', Arial, sans-serif",
-  },
-  header: {
-    position: 'relative',
-    marginBottom: '2rem',
-    textAlign: 'center',
-  },
-  star: {
-    position: 'absolute',
-    left: '30px',
-    top: '-5px',
-    fontSize: '2.5rem',
-    color: '#FFD700',
-    cursor: 'pointer',
-    transition: 'transform 0.3s',
-    ':hover': {
-      transform: 'rotate(15deg) scale(1.1)',
-    },
-  },
-  searchInput: {
-    width: '50%',
-    minWidth: '300px',
-    padding: '15px 25px',
-    borderRadius: '30px',
-    border: '2px solid #444',
-    backgroundColor: '#333',
-    color: '#fff',
-    fontSize: '1.1rem',
-    transition: 'all 0.3s',
-    ':focus': {
-      outline: 'none',
-      borderColor: '#FFD700',
-      boxShadow: '0 0 15px rgba(255, 215, 0, 0.3)',
-    },
-  },
-  cardGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
-    gap: '2rem',
-    maxWidth: '1400px',
-    margin: '0 auto',
-    padding: '20px',
-  },
-  card: {
-    background: '#3a3a3a',
-    borderRadius: '15px',
-    padding: '1.5rem',
-    textAlign: 'center',
-    transition: 'all 0.3s ease',
-    boxShadow: '0 4px 6px rgba(0,0,0,0.2)',
-    ':hover': {
-      transform: 'translateY(-7px)',
-      boxShadow: '0 12px 20px rgba(0,0,0,0.3)',
-    },
-  },
-  avatar: {
-    width: '100px',
-    height: '100px',
-    borderRadius: '50%',
-    marginBottom: '1rem',
-    border: '3px solid #FFD700',
-    objectFit: 'cover',
-  },
-  name: {
-    color: '#fff',
-    margin: '1rem 0',
-    lineHeight: '1.4',
-  },
-  firstName: {
-    display: 'block',
-    fontSize: '1.3rem',
-    fontWeight: '600',
-  },
-  lastName: {
-    display: 'block',
-    fontSize: '1.1rem',
-    color: '#aaa',
-  },
-  role: {
-    color: '#FFD700',
-    fontSize: '0.95rem',
-    marginTop: '0.5rem',
-  },
-  noResults: {
-    color: '#fff',
-    fontSize: '1.2rem',
-    textAlign: 'center',
-    gridColumn: '1 / -1',
-    padding: '2rem',
-  },
-};
-
-export default App;
+export default MovieApp;
